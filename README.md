@@ -25,7 +25,7 @@
 
 X86_64固件在此 [Releases](https://github.com/garypang13/Actions-OpenWrt-Nginx/releases/latest) 下载,每周日更新固件.
 
-后台入口 10.0.0.1 &nbsp;(若后台无法打开,请插拔交换wan,lan网线顺序,默认第一个网口eth0为wan口,第二个网eth1口为lan口.)
+后台入口 10.0.0.1 &nbsp;(若后台无法打开,请插拔交换wan,lan网线顺序.)
 
 默认密码 root
 
@@ -37,6 +37,10 @@ X86_64固件在此 [Releases](https://github.com/garypang13/Actions-OpenWrt-Ngin
 
 在仓库Settings->Secrets中分别添加 PPPOE_USERNAME, PPPOE_PASSWD 可设置默认拨号账号密码.
 
+Secrets中添加 SCKEY 可通过[Server酱](http://sc.ftqq.com)推送编译结果到微信
+
+Secrets中添加 TELEGRAM_TO (chat_id), TELEGRAM_TOKEN (token) 可推送编译结果到Telegram Bot. [教程](https://longnight.github.io/2018/12/12/Telegram-Bot-notifications)
+
 点击右上角的Star按钮开始编译
 
 diy云编译教程: [Read the details in my blog (in Chinese) | 中文教程](https://p3terx.com/archives/build-openwrt-with-github-actions.html)
@@ -44,7 +48,6 @@ diy云编译教程: [Read the details in my blog (in Chinese) | 中文教程](ht
 ### 默认插件包含:
 
 + SSR Plus
-+ PassWall
 + AdguardHome DNS+恶意网址过滤
 + 上网时间控制
 + 微信推送
@@ -58,13 +61,14 @@ diy云编译教程: [Read the details in my blog (in Chinese) | 中文教程](ht
 + ttyd 网页版终端
 + UPNP 自动端口转发
 + Aria2 全能下载工具
-+ BaiduPCS-Web 百度网盘web客户端(修复登录)
++ BaiduPCS-Web 百度网盘web客户端(Aria2+修复登录)
 + cifsd + NFS 网络共享
 + Netdata 全能性能监控
 + diskman 磁盘管理
++ dockerman 玩转docker必备
++ Rclone 网盘挂载,同步工具
 + qBittorrent BT下载工具
-+ 可道云 做NAS必备
-+ PHP 建站与可道云必备
++ Transmission BT/PT下載工具
 + aMule 电骡下载 ed2k必备
 + Turbo ACC 网络加速
 + SQM QOS 智能网络优化
@@ -74,13 +78,16 @@ diy云编译教程: [Read the details in my blog (in Chinese) | 中文教程](ht
 
 其他插件请在[Releases](https://github.com/garypang13/Actions-OpenWrt-Nginx/releases/latest)中下载对应的ipk文件,自行安装.
 
+### 默认后台地址 10.0.0.1, 密码 root
+
+### 请分配不低于1G 的磁盘容量.
+
 ### 如何在本地使用此项目编译自己需要的 OpenWrt 固件
 
 #### 注意：
 
 1. **不**要用 **root** 用户 git 和编译！！！
 2. 国内用户编译前请准备好梯子,使用大陆白名单或全局模式
-3. 默认登陆10.0.0.1, 密码 root
 
 #### 编译命令如下:
 
@@ -88,7 +95,7 @@ diy云编译教程: [Read the details in my blog (in Chinese) | 中文教程](ht
 
 2. 命令行输入 `sudo apt-get update` ，然后输入
 `
-sudo apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs gcc-multilib g++-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler ccache xsltproc rename antlr3 gperf curl
+sudo apt-get -y install build-essential asciidoc binutils bzip2 gawk gettext git libncurses5-dev libz-dev patch python2.7 unzip zlib1g-dev lib32gcc1 libc6-dev-i386 subversion flex uglifyjs gcc-multilib g++-multilib p7zip p7zip-full msmtp libssl-dev texinfo libglib2.0-dev xmlto qemu-utils upx libelf-dev autoconf automake libtool autopoint device-tree-compiler ccache xsltproc rename antlr3 gperf curl
 `
 
 3. 首次编译执行脚本:
@@ -97,21 +104,23 @@ git clone https://github.com/openwrt/openwrt
 git clone https://github.com/garypang13/Actions-OpenWrt-Nginx
 cp -Rf Actions-OpenWrt-Nginx/* openwrt/
 cd openwrt
-./scripts/feeds update -a && ./scripts/feeds install -a
-./diy.sh
-cp -Rf diy/* ./
+./scripts/feeds update -a
+sh ./diy.sh
 mv X86_64.config .config
 make defconfig
    ```
 4. 二次编译执行脚本
 ```bash
-cd openwrt && git pull && cd -
-cd Actions-OpenWrt-Nginx && git pull && cd -
+rm -Rf Actions-OpenWrt-Nginx && git clone https://github.com/garypang13/Actions-OpenWrt-Nginx
 cp -Rf Actions-OpenWrt-Nginx/* openwrt/
 cd openwrt
-./scripts/feeds update -a && ./scripts/feeds install -a
-./diy.sh
-cp -Rf diy/* ./
+rm -Rf feeds package
+svn co https://github.com/openwrt/openwrt/trunk/package
+git pull
+[ -f ".config" ] && mv .config .config.bak
+./scripts/feeds update custom -a
+sh ./diy.sh
+[ -f ".config.bak" ] && mv .config.bak .config || mv X86_64.config .config
 make defconfig
    ```
 5. 如需修改默认配置比如定制插件等,请执行 `make menuconfig`
